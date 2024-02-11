@@ -1,34 +1,45 @@
+import { useState, useEffect } from "react";
 import * as Tone from "tone";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  addMarker,
-  setBPM,
-  togglePlayback,
-} from "./redux/slices/audioSlice.js"; // Adjust the import path based on your project structure
+import { togglePlayback } from "./redux/slices/audioSlice.js";
 import { RootState } from "./redux/store.ts";
 
 function Audio() {
+  const [player, setPlayer] = useState<Tone.Player | null>(null);
   const dispatch = useDispatch();
   const { isPlaying } = useSelector((state: RootState) => state.audio);
 
-  const handleTap = () => {
-    const currentTime = Tone.now();
-    dispatch(addMarker({ time: currentTime, type: "section" }));
-  };
+  useEffect(() => {
+    const newPlayer = new Tone.Player({
+      url: "/[ytmp3.lat]Big_Thief_-_Shark_Smile_Official_Audio_.mp3?url",
+      autostart: false,
+    }).toDestination();
 
-  const handleTapTempo = () => {
-    const analyzedBPM = 120; // Replace this with your tempo analysis logic
-    dispatch(setBPM(Math.round(analyzedBPM)));
-  };
+    setPlayer(newPlayer);
+
+    return () => {
+      newPlayer.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (player) {
+      if (isPlaying) {
+        // Use a user-triggered event to start the audio context
+        Tone.start().then(() => {
+          player.start();
+          console.log("player.start triggered");
+        });
+      } else {
+        player.stop();
+        console.log("player.stop triggered");
+      }
+    }
+  }, [isPlaying, player]);
 
   const handleTogglePlayback = () => {
+    console.log("clicked play/pause");
     dispatch(togglePlayback());
-
-    if (isPlaying) {
-      Tone.Transport.start();
-    } else {
-      Tone.Transport.stop();
-    }
   };
 
   return (
@@ -36,9 +47,6 @@ function Audio() {
       <button onClick={handleTogglePlayback}>
         {isPlaying ? "Pause" : "Play"}
       </button>
-      <button onClick={handleTapTempo}>Tap Tempo</button>
-      <button onClick={handleTap}>Add Section Marker</button>
-      {/* Display markers, bpm, or other relevant information */}
     </div>
   );
 }
